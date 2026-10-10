@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c2430">
+<meta name="application-name" content="TM">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TM">
+<title>TM Machines</title>
+
+<style>
+  :root{
+    --bg:#e8eaeb; --card:#f6f7f7; --ink:#1c2430; --mute:#5d6875; --line:#cfd4d8;
+    --work:#2f8a57; --idle:#d99a12; --maint:#3b6ea8; --off:#7a828c;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#141a22; --card:#1d2530; --ink:#e9edf1; --mute:#93a0ad; --line:#2d3845; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Bahnschrift","Roboto Condensed","Segoe UI",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+  body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px}
+  h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.2px}
+  button{font:inherit;color:inherit;background:none;border:1px solid var(--line);border-radius:6px;padding:8px 12px;min-height:40px}
+  button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--maint);outline-offset:2px}
+  main{padding:0 12px 28px;max-width:560px;margin:0 auto}
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding:6px 4px 10px}
+  .tabs button{white-space:nowrap}
+  .tabs button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .banner{border-radius:10px;padding:18px 16px;color:#fff;background:var(--off)}
+  .banner .st{font-size:34px;font-weight:700;line-height:1.05}
+  .banner .meta{margin-top:6px;font-size:14px;opacity:.92}
+  .bar{display:flex;height:18px;border-radius:4px;overflow:hidden;margin:14px 0 6px;background:var(--line)}
+  .bar span{display:block;height:100%}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--mute)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .tile small{display:block;color:var(--mute);font-size:13px}
+  .tile b{font-size:22px;font-variant-numeric:tabular-nums;font-weight:600}
+  .tile.wide{grid-column:span 2}
+  .row{display:flex;gap:8px;margin:6px 0 4px}
+  input{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:9px 10px;min-height:42px;width:100%}
+  label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+  h2{font-size:16px;margin:22px 4px 8px;font-weight:600}
+  .rep{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+  .rep .top{display:flex;justify-content:space-between;font-weight:600}
+  .rep .sub{font-size:13px;color:var(--mute);margin-top:4px;font-variant-numeric:tabular-nums}
+  .rep .bar{height:8px;margin:8px 0 2px}
+  .msg{color:var(--mute);font-size:14px;padding:8px 4px}
+  dialog{border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:min(92vw,460px);padding:16px}
+  dialog::backdrop{background:rgba(0,0,0,.5)}
+  .err{color:#c0392b}
+  .tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  .tbl th,.tbl td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  .tbl th:first-child,.tbl td:first-child{text-align:left;font-weight:600}
+  .tbl th{color:var(--mute);font-weight:500}
+  .tbl tr.tot td{font-weight:700;border-bottom:0}
+  .scroll{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 6px}
+  .mc.add{display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--mute);border-style:dashed;background:transparent}
+  .danger{color:#c0392b;border-color:#c0392b}
+
+  .sum{font-size:14px;color:var(--mute);padding:4px 4px 10px}
+  .ov{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mc{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:0;overflow:hidden;min-height:112px}
+  .mc .strip{height:8px;background:var(--off)}
+  .mc .in{padding:9px 11px 10px}
+  .mc .id{font-size:17px;font-weight:700}
+  .mc .stt{font-size:14px;margin-top:1px;font-weight:600}
+  .mc .num{font-size:13px;color:var(--mute);margin-top:6px;font-variant-numeric:tabular-nums}
+  .back{margin:2px 0 10px}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<header>
+  <h1>Machine Monitor</h1>
+  <button id="btnSettings" type="button">Settings</button>
+</header>
+
+<main>
+  <section id="overview" hidden>
+    <div class="sum" id="sum">Loading machines</div>
+    <div class="ov" id="ov"></div>
+    <h2>Report by day</h2>
+    <div class="row"><input type="date" id="repDate"><button class="primary" id="btnRep" type="button">Show</button></div>
+    <div id="dayRep" class="msg">Pick a day, then tap Show.</div>
+  </section>
+
+  <section id="live" hidden>
+    <button type="button" class="back" id="btnBack">All machines</button>
+    <div class="banner" id="banner">
+      <div class="st" id="state">--</div>
+      <div class="meta" id="meta">Waiting for data</div>
+    </div>
+    <div class="bar" id="bar"></div>
+    <div class="legend">
+      <span><i style="background:var(--work)"></i>Working</span>
+      <span><i style="background:var(--idle)"></i>Idle</span>
+      <span><i style="background:var(--maint)"></i>Maintenance</span>
+      <span><i style="background:var(--off)"></i>Power off</span>
+    </div>
+    <div class="grid">
+      <div class="tile"><small>Working</small><b id="vWork">--</b></div>
+      <div class="tile"><small>Idle</small><b id="vIdle">--</b></div>
+      <div class="tile"><small>Maintenance</small><b id="vMaint">--</b></div>
+      <div class="tile"><small>Power off</small><b id="vOff">--</b></div>
+      <div class="tile"><small>Efficiency</small><b id="vEff">--</b></div>
+      <div class="tile"><small>Total working</small><b id="vTotal">--</b></div>
+    </div>
+
+    <label for="op">Operator name</label>
+    <div class="row">
+      <input id="op" maxlength="19" placeholder="Name shown on the machine screen" autocomplete="off">
+      <button class="primary" id="btnOp" type="button">Send</button>
+    </div>
+    <div class="msg" id="opMsg"></div>
+
+    <h2>Daily reports</h2>
+    <div id="reports"><div class="msg">Loading reports</div></div>
+    <button type="button" class="danger" id="btnRemove" style="margin-top:22px">Remove this machine</button>
+  </section>
+
+  <div class="msg" id="empty" hidden>Open Settings and enter your database URL and machine number.</div>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog" id="frm">
+    <h2 style="margin-top:0">Settings</h2>
+    <label for="sUrl">Database URL</label>
+    <input id="sUrl" placeholder="https://machine-time-management-gimi-default-rtdb.europe-west1.firebasedatabase.app" inputmode="url" autocomplete="off">
+    <label for="sSecret">Database secret (needed if rules require login)</label>
+    <input id="sSecret" type="password" autocomplete="off">
+    <label for="sMachines">Machine numbers, separated by commas</label>
+    <input id="sMachines" placeholder="M01, M02, M03, M04, M05, M06, M07, M08" autocomplete="off">
+    <button type="button" id="btnBleOpen" style="width:100%;margin-top:16px">Device setup by Bluetooth (Wi-Fi, operator)</button>
+    <div class="row" style="margin-top:12px">
+      <button type="button" id="sCancel">Cancel</button>
+      <button class="primary" type="submit" id="sSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgBle">
+  <h2 style="margin-top:0">Device setup by Bluetooth</h2>
+  <div class="msg">1. On the device, hold the button for 20 seconds, then release. The screen shows "Bluetooth setup".<br>2. Fill in the boxes below and tap Connect and send, then choose the device TM-... from the list.</div>
+  <label for="bPin">Setup PIN (the one in the device code)</label>
+  <input id="bPin" inputmode="numeric" autocomplete="off">
+  <label for="bSsid">Wi-Fi name</label>
+  <input id="bSsid" autocomplete="off" autocapitalize="off">
+  <label for="bPass">Wi-Fi password</label>
+  <input id="bPass" autocomplete="off" autocapitalize="off">
+  <label for="bMid">Machine number (optional, example M03)</label>
+  <input id="bMid" autocomplete="off" placeholder="M01">
+  <label for="bOp">Operator name (optional)</label>
+  <input id="bOp" maxlength="19" autocomplete="off">
+  <div class="row" style="margin-top:14px"><button type="button" id="bClose">Close</button><button class="primary" type="button" id="bGo">Connect and send</button></div>
+  <pre id="bleLog" class="msg" style="white-space:pre-wrap;min-height:40px;margin:8px 0 0;font:inherit"></pre>
+</dialog>
+
+<script>
+(function(){
+  var $ = function(id){return document.getElementById(id)};
+  var DEF = ["M01","M02","M03","M04","M05","M06","M07","M08"];
+  var DEFURL = "https://machine-time-management-gimi-default-rtdb.europe-west1.firebasedatabase.app";
+  var cfg = {url:DEFURL, secret:"", machines:DEF.slice()};
+  var cur = null, timer = null, repTimer = null, store = {};
+
+  function load(){
+    try{
+      var c = JSON.parse(localStorage.getItem("mm_cfg")||"null");
+      if(c){ cfg = c; if(!cfg.machines || cfg.machines.length<=1) cfg.machines = DEF.slice(); if(!cfg.url || cfg.url.indexOf("your-project")>=0) cfg.url = DEFURL; }
+    }catch(e){}
+  }
+  function save(){ try{ localStorage.setItem("mm_cfg", JSON.stringify(cfg)); }catch(e){} }
+
+  function endpoint(path){
+    var u = cfg.url.replace(/\/+$/,"") + path + ".json";
+    if(cfg.secret) u += "?auth=" + encodeURIComponent(cfg.secret);
+    return u;
+  }
+  function fetchJson(path){
+    return fetch(endpoint(path), {cache:"no-store"}).then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json();
+    });
+  }
+  function hms(s){
+    s = Math.max(0, Math.round(s||0));
+    var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), x = s%60;
+    return (h<10?"0":"")+h+":"+(m<10?"0":"")+m+":"+(x<10?"0":"")+x;
+  }
+  function hm(s){
+    s = Math.max(0, Math.round(s||0));
+    return Math.floor(s/3600)+"h "+("0"+Math.floor((s%3600)/60)).slice(-2)+"m";
+  }
+  function barHtml(d){
+    var w=d.work||0,i=d.idle||0,m=d.maint||0,o=d.off||0,t=w+i+m+o;
+    if(!t) return "";
+    function seg(v,c){return '<span style="width:'+(100*v/t)+'%;background:var(--'+c+')"></span>';}
+    return seg(w,"work")+seg(i,"idle")+seg(m,"maint")+seg(o,"off");
+  }
+
+  // status of one machine: {key, label, color}
+  function status(id){
+    var s = store[id];
+    if(!s || s.err) return {key:"err", label:"Cannot connect", color:"var(--off)"};
+    if(!s.d) return {key:"none", label:"No data", color:"var(--off)"};
+    if(Date.now() - s.chg > 45000) return {key:"off", label:"No signal", color:"var(--off)"};
+    var st = String(s.d.state||"").toUpperCase();
+    if(st==="WORKING") return {key:"work", label:"Working", color:"var(--work)"};
+    if(st==="IDLE")    return {key:"idle", label:"Idle", color:"var(--idle)"};
+    if(st==="MAINT")   return {key:"maint", label:"Maintenance", color:"var(--maint)"};
+    return {key:"off", label:"No signal", color:"var(--off)"};
+  }
+
+  function renderOverview(){
+    var box = $("ov"); box.innerHTML = "";
+    var n = {work:0, idle:0, maint:0, other:0}, firstErr = "";
+    cfg.machines.forEach(function(id){
+      var st = status(id), s = store[id] || {}, d = s.d;
+      if(n[st.key]!==undefined) n[st.key]++; else n.other++;
+      if(s.err && !firstErr) firstErr = s.err;
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "mc";
+      b.innerHTML =
+        '<div class="strip" style="background:'+st.color+'"></div><div class="in">'+
+        '<div class="id">'+id+'</div>'+
+        '<div class="stt" style="color:'+st.color+'">'+st.label+'</div>'+
+        (d ? '<div class="num">Eff '+(Number(d.efficiency)||0).toFixed(1)+' %<br>Work '+hm(d.work)+'</div>' : '<div class="num">--</div>')+
+        '</div>';
+      b.onclick = function(){ openMachine(id); };
+      box.appendChild(b);
+    });
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "mc add"; add.textContent = "+ Add machine";
+    add.onclick = addMachine; box.appendChild(add);
+    var t = n.work+" working, "+n.idle+" idle, "+n.maint+" maintenance, "+n.other+" no signal";
+    if(firstErr) t += ". Problem: "+firstErr+". Check URL, secret and internet.";
+    $("sum").textContent = t;
+  }
+
+  function renderDetail(){
+    var st = status(cur), s = store[cur] || {}, d = s.d || {};
+    var meta = cur;
+    if(st.key==="err") meta += "  |  "+(s.err||"")+". Check URL, secret and internet.";
+    else if(st.key==="none") meta += "  |  Nothing at /machines/"+cur+"/live yet";
+    else if(st.key==="off") meta += "  |  no new data for over 45 s (power off or no Wi-Fi)";
+    else meta += "  |  updated just now";
+    $("banner").style.background = st.color;
+    $("state").textContent = st.label;
+    $("meta").textContent = meta;
+    $("vWork").textContent = s.d ? hms(d.work) : "--";
+    $("vIdle").textContent = s.d ? hms(d.idle) : "--";
+    $("vMaint").textContent = s.d ? hms(d.maint) : "--";
+    $("vOff").textContent = s.d ? hms(d.off) : "--";
+    $("vEff").textContent = s.d ? (Number(d.efficiency)||0).toFixed(1)+" %" : "--";
+    $("vTotal").textContent = s.d ? hm(d.total_work) : "--";
+    $("bar").innerHTML = s.d ? barHtml(d) : "";
+  }
+
+  function render(){ renderOverview(); if(cur) renderDetail(); }
+
+  function pollAll(){
+    if(!cfg.url) return;
+    Promise.all(cfg.machines.map(function(id){
+      return fetchJson("/machines/"+id+"/live").then(function(d){
+        var s = store[id] || (store[id] = {upd:null, chg:Date.now()});
+        s.err = null; s.d = d || null;
+        if(d && d.updated !== s.upd){ s.upd = d.updated; s.chg = Date.now(); }
+      }).catch(function(e){
+        var s = store[id] || (store[id] = {upd:null, chg:Date.now()});
+        s.err = e.message; s.d = null;
+      });
+    })).then(render);
+  }
+
+
+  function pad2(n){ return (n<10?"0":"")+n; }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+
+  function addMachine(){
+    var v = prompt("New machine number (same as on the device), e.g. M09");
+    if(!v) return;
+    v = v.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"").slice(0,7);
+    if(!v) return;
+    if(cfg.machines.indexOf(v)<0){ cfg.machines.push(v); save(); }
+    pollAll(); renderOverview();
+  }
+  function removeMachine(){
+    if(!cur) return;
+    if(!confirm("Remove "+cur+" from this app? Its data stays in the database.")) return;
+    cfg.machines = cfg.machines.filter(function(x){ return x!==cur; });
+    delete store[cur]; save(); showOverview();
+  }
+
+  function loadDayReport(){
+    var v = $("repDate").value, box = $("dayRep");
+    if(!v){ box.innerHTML = '<div class="msg">Pick a day first.</div>'; return; }
+    var key = v.replace(/-/g,""), live = (v===todayStr());
+    box.innerHTML = '<div class="msg">Loading</div>';
+    Promise.all(cfg.machines.map(function(id){
+      if(live){ var s = store[id]; return Promise.resolve({id:id, d:(s&&s.d)?s.d:null}); }
+      return fetchJson("/machines/"+id+"/reports/"+key)
+        .then(function(d){ return {id:id, d:d||null}; })
+        .catch(function(e){ return {id:id, d:null, err:e.message}; });
+    })).then(function(rows){
+      var W=0,I=0,M=0,O=0,txt="Machine report "+v+(live?" (today so far)":"")+"\n", html="";
+      rows.forEach(function(r){
+        if(r.d){
+          W+=r.d.work||0; I+=r.d.idle||0; M+=r.d.maint||0; O+=r.d.off||0;
+          html += "<tr><td>"+r.id+"</td><td>"+hm(r.d.work)+"</td><td>"+hm(r.d.idle)+"</td><td>"+hm(r.d.maint)+"</td><td>"+hm(r.d.off)+"</td><td>"+(Number(r.d.efficiency)||0).toFixed(1)+"%</td></tr>";
+          txt += r.id+": Eff "+(Number(r.d.efficiency)||0).toFixed(1)+"%, Work "+hm(r.d.work)+", Idle "+hm(r.d.idle)+", Maint "+hm(r.d.maint)+", Off "+hm(r.d.off)+"\n";
+        } else {
+          html += '<tr><td>'+r.id+'</td><td colspan="5" style="color:var(--mute)">'+(r.err?r.err:"no data")+'</td></tr>';
+        }
+      });
+      var den = W+I+M, eff = den ? 100*W/den : 0;
+      html += '<tr class="tot"><td>All</td><td>'+hm(W)+'</td><td>'+hm(I)+'</td><td>'+hm(M)+'</td><td>'+hm(O)+'</td><td>'+eff.toFixed(1)+'%</td></tr>';
+      txt += "All machines: Eff "+eff.toFixed(1)+"%, Work "+hm(W)+", Idle "+hm(I)+", Maint "+hm(M)+", Off "+hm(O);
+      box.innerHTML = '<div class="scroll"><table class="tbl"><tr><th>Machine</th><th>Work</th><th>Idle</th><th>Maint</th><th>Off</th><th>Eff</th></tr>'+html+'</table></div>';
+      var b = document.createElement("button"); b.type="button"; b.textContent="Share this report"; b.style.marginTop="10px";
+      b.onclick = function(){
+        if(navigator.share) navigator.share({text:txt}).catch(function(){});
+        else if(navigator.clipboard) navigator.clipboard.writeText(txt);
+      };
+      box.appendChild(b);
+    });
+  }
+
+  function fmtDay(k){ k=String(k); return k.slice(0,4)+"-"+k.slice(4,6)+"-"+k.slice(6,8); }
+
+  function loadOperator(){
+    var id = cur;
+    fetchJson("/machines/"+id+"/operator").then(function(v){
+      if(id===cur && typeof v==="string" && document.activeElement!==$("op")) $("op").value = v;
+    }).catch(function(){});
+  }
+
+  function loadReports(){
+    if(!cur) return;
+    var id = cur;
+    fetchJson("/machines/"+id+"/reports").then(function(r){
+      if(id!==cur) return;
+      var box = $("reports"); box.innerHTML = "";
+      if(!r){ box.innerHTML = '<div class="msg">No reports yet. The first one appears after midnight.</div>'; return; }
+      Object.keys(r).sort().reverse().slice(0,31).forEach(function(k){
+        var d = r[k], el = document.createElement("div"); el.className="rep";
+        el.innerHTML =
+          '<div class="top"><span>'+fmtDay(k)+'</span><span>'+(Number(d.efficiency)||0).toFixed(1)+' %</span></div>'+
+          '<div class="bar">'+barHtml(d)+'</div>'+
+          '<div class="sub">Work '+hms(d.work)+'  Idle '+hms(d.idle)+'<br>Maint '+hms(d.maint)+'  Off '+hms(d.off)+
+          (d.operator ? '<br>Operator: '+String(d.operator).replace(/[<>&]/g,"") : "")+'</div>';
+        var b = document.createElement("button"); b.type="button"; b.textContent="Share"; b.style.marginTop="8px";
+        b.onclick = function(){
+          var txt = "Machine "+id+" report "+fmtDay(k)+"\nEfficiency: "+(Number(d.efficiency)||0).toFixed(1)+"%\nWorking: "+hms(d.work)+
+                    "\nIdle: "+hms(d.idle)+"\nMaintenance: "+hms(d.maint)+"\nPower off: "+hms(d.off)+"\nTotal working: "+hm(d.total_work);
+          if(navigator.share) navigator.share({text:txt}).catch(function(){});
+          else if(navigator.clipboard) navigator.clipboard.writeText(txt);
+        };
+        el.appendChild(b);
+        box.appendChild(el);
+      });
+    }).catch(function(e){
+      if(id===cur) $("reports").innerHTML = '<div class="msg err">Could not load reports: '+e.message+'</div>';
+    });
+  }
+
+  function openMachine(id){
+    cur = id;
+    $("overview").hidden = true; $("live").hidden = false;
+    $("op").value = ""; $("opMsg").textContent = "";
+    $("reports").innerHTML = '<div class="msg">Loading reports</div>';
+    renderDetail(); loadOperator(); loadReports();
+    window.scrollTo(0,0);
+  }
+  function showOverview(){
+    cur = null;
+    $("live").hidden = true; $("overview").hidden = false;
+    renderOverview();
+  }
+
+  function sendOperator(){
+    var v = $("op").value.trim();
+    if(!v || !cur) return;
+    fetch(endpoint("/machines/"+cur+"/operator"), {method:"PUT", body:JSON.stringify(v)})
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status);
+        $("opMsg").className="msg"; $("opMsg").textContent="Sent. The machine screen updates within 30 seconds."; })
+      .catch(function(e){ $("opMsg").className="msg err"; $("opMsg").textContent="Not sent: "+e.message; });
+  }
+
+  function start(){
+    var ok = !!cfg.url && cfg.machines.length;
+    $("empty").hidden = ok;
+    $("overview").hidden = !ok || !!cur;
+    $("live").hidden = !ok || !cur;
+    if(!ok) return;
+    if(cur && cfg.machines.indexOf(cur)<0) cur = null;
+    if(!cur) showOverview();
+    pollAll();
+    clearInterval(timer); timer = setInterval(pollAll, 5000);
+    clearInterval(repTimer); repTimer = setInterval(function(){ if(cur && !document.hidden) loadReports(); }, 300000);
+  }
+
+  $("btnSettings").onclick = function(){
+    $("sUrl").value = cfg.url; $("sSecret").value = cfg.secret; $("sMachines").value = cfg.machines.join(", ");
+    $("dlg").showModal();
+  };
+  $("sCancel").onclick = function(){ $("dlg").close(); };
+  $("frm").onsubmit = function(){
+    cfg.url = $("sUrl").value.trim();
+    cfg.secret = $("sSecret").value.trim();
+    cfg.machines = $("sMachines").value.split(",").map(function(x){return x.trim();}).filter(Boolean);
+    if(!cfg.machines.length) cfg.machines = DEF.slice();
+    store = {};
+    save(); start();
+  };
+  $("btnOp").onclick = sendOperator;
+  $("btnBack").onclick = showOverview;
+  $("btnRemove").onclick = removeMachine;
+  $("btnRep").onclick = loadDayReport;
+  $("repDate").value = todayStr();
+  $("repDate").max = todayStr();
+
+
+  var SVC="7a1f0001-5e3b-4c1a-9b0e-4d5c7a1f0001", CMDU="7a1f0002-5e3b-4c1a-9b0e-4d5c7a1f0001", STATU="7a1f0003-5e3b-4c1a-9b0e-4d5c7a1f0001";
+  function bleLog(t){ $("bleLog").textContent += t+"\n"; }
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+
+  async function bleGo(){
+    $("bleLog").textContent = "";
+    if(!navigator.bluetooth){
+      bleLog("Bluetooth is not available in this page. Open the hosted app (https address) in Chrome on Android.");
+      return;
+    }
+    var pin=$("bPin").value.trim(), ssid=$("bSsid").value, pass=$("bPass").value,
+        mid=$("bMid").value.trim().toUpperCase(), op=$("bOp").value.trim();
+    if(!pin){ bleLog("Enter the setup PIN."); return; }
+    if(!ssid && !mid && !op){ bleLog("Fill in at least one thing to send."); return; }
+    var dev = null;
+    try{
+      bleLog("Searching for the device (it must show Bluetooth setup)...");
+      dev = await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]});
+      var srv = await dev.gatt.connect();
+      var svc = await srv.getPrimaryService(SVC);
+      var cmd = await svc.getCharacteristic(CMDU);
+      var st  = await svc.getCharacteristic(STATU);
+      var enc = new TextEncoder(), dec = new TextDecoder(), last = "";
+      await st.startNotifications();
+      st.addEventListener("characteristicvaluechanged", function(e){ last = dec.decode(e.target.value); bleLog("Device: "+last); });
+
+      var sendKV = async function(k, v){
+        var bytes = enc.encode(v), first = true;
+        for(var i=0; first || i<bytes.length; i+=14){
+          var head = enc.encode(k + (first ? "=" : "+"));
+          var piece = bytes.slice(i, i+14);
+          var buf = new Uint8Array(head.length + piece.length);
+          buf.set(head, 0); buf.set(piece, head.length);
+          first = false;
+          await cmd.writeValue(buf);
+          await sleep(120);
+        }
+      };
+
+      bleLog("Connected. Checking PIN...");
+      await sendKV("PIN", pin);
+      await sleep(500);
+      if(last !== "OK PIN"){ bleLog("Wrong PIN. Nothing was changed."); dev.gatt.disconnect(); return; }
+      if(ssid){ await sendKV("SSID", ssid); await sendKV("PASS", pass); }
+      if(mid){ await sendKV("MID", mid); }
+      if(op){ await sendKV("OP", op); }
+      await sendKV("SAVE", "1");
+      if(ssid){
+        bleLog("Waiting for the device to join Wi-Fi...");
+        for(var n=0; n<60 && last!=="WIFI OK" && last!=="WIFI FAIL"; n++) await sleep(500);
+        if(last==="WIFI OK") bleLog("Done. The device is online.");
+        else bleLog("Wi-Fi did not connect. Check the name and password, then try again.");
+      } else {
+        await sleep(500);
+        bleLog("Done.");
+      }
+    }catch(e){
+      bleLog("Error: "+e.message);
+    }
+    try{ if(dev && dev.gatt.connected) dev.gatt.disconnect(); }catch(x){}
+  }
+  $("btnBleOpen").onclick = function(){ $("dlg").close(); $("bleLog").textContent=""; $("dlgBle").showModal(); };
+  $("bClose").onclick = function(){ $("dlgBle").close(); };
+  $("bGo").onclick = bleGo;
+
+  load();
+  if(!cfg.url){ $("empty").hidden = false; } else { start(); }
+})();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+</script>
+</body>
+</html>
