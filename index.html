@@ -62,10 +62,31 @@
   .scroll{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 6px}
   .mc.add{display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--mute);border-style:dashed;background:transparent}
   .danger{color:#c0392b;border-color:#c0392b}
+  .effbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+  .effbox small{color:var(--mute);font-size:14px;display:block}
+  .effbox b{font-size:44px;font-variant-numeric:tabular-nums;font-weight:700}
+  .effn{font-size:22px;font-variant-numeric:tabular-nums}
+
+  .opn{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:15px;margin-bottom:1px}
+  select{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:9px 10px;min-height:42px;width:100%}
+  input[type=checkbox]{width:auto;min-height:0;margin:0 8px 0 0}
+  .chk{display:flex;align-items:center;font-size:14px;margin:10px 2px}
+  .sm{font-size:13px;color:var(--mute);margin:8px 2px 0}
+  .rep .actions{display:flex;gap:8px;margin-top:8px}
+  .hr{border:0;border-top:1px solid var(--line);margin:18px 0 6px}
+
+  .login{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+  .login[hidden]{display:none}
+  .lbox{width:100%;max-width:360px}
+  .lbox h1{font-size:22px;margin:0 0 4px}
+  .logo{width:64px;height:64px;border-radius:14px;background:#1c2430;color:#f2f4f5;font-weight:700;font-size:28px;display:flex;align-items:center;justify-content:center;border-bottom:4px solid #d99a12;margin-bottom:14px}
+
+
 
   .sum{font-size:14px;color:var(--mute);padding:4px 4px 10px}
   .ov{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .mc{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:0;overflow:hidden;min-height:112px}
+  .mc{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch}
   .mc .strip{height:8px;background:var(--off)}
   .mc .in{padding:9px 11px 10px}
   .mc .id{font-size:17px;font-weight:700}
@@ -78,6 +99,20 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
+<div id="login" class="login" hidden>
+  <form id="loginForm" class="lbox">
+    <div class="logo">TM</div>
+    <h1>Machine Monitor</h1>
+    <div class="msg" style="padding-left:0">Sign in to see your machines.</div>
+    <label for="lEmail">Username</label>
+    <input id="lEmail" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+    <label for="lPass">Password</label>
+    <input id="lPass" type="password" autocomplete="current-password" required>
+    <button class="primary" type="submit" id="lGo" style="width:100%;margin-top:16px">Sign in</button>
+    <div class="msg err" id="lErr" role="alert" style="padding-left:0"></div>
+  </form>
+</div>
+
 <header>
   <h1>Machine Monitor</h1>
   <button id="btnSettings" type="button">Settings</button>
@@ -95,9 +130,11 @@
   <section id="live" hidden>
     <button type="button" class="back" id="btnBack">All machines</button>
     <div class="banner" id="banner">
+      <div class="meta" id="opLine" style="margin:0 0 4px"></div>
       <div class="st" id="state">--</div>
       <div class="meta" id="meta">Waiting for data</div>
     </div>
+    <div class="sm" id="sinceTxt"></div>
     <div class="bar" id="bar"></div>
     <div class="legend">
       <span><i style="background:var(--work)"></i>Working</span>
@@ -110,9 +147,10 @@
       <div class="tile"><small>Idle</small><b id="vIdle">--</b></div>
       <div class="tile"><small>Maintenance</small><b id="vMaint">--</b></div>
       <div class="tile"><small>Power off</small><b id="vOff">--</b></div>
-      <div class="tile"><small>Efficiency</small><b id="vEff">--</b></div>
+      <div class="tile"><small id="lEff">Efficiency</small><b id="vEff">--</b></div>
       <div class="tile"><small>Total working</small><b id="vTotal">--</b></div>
     </div>
+    <div class="sm" id="effNote"></div>
 
     <label for="op">Operator name</label>
     <div class="row">
@@ -121,9 +159,21 @@
     </div>
     <div class="msg" id="opMsg"></div>
 
-    <h2>Daily reports</h2>
+    <label for="shiftSel">Shift (100% = the full shift time)</label>
+    <div class="row">
+      <select id="shiftSel">
+        <option value="8">8 hours (one shift)</option>
+        <option value="16">16 hours (two shifts)</option>
+      </select>
+      <button class="primary" id="btnShift" type="button">Set</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="shiftAll">Apply to all machines</label>
+    <div class="msg" id="shiftMsg"></div>
+
+    <h2>Reports (saved when the device is reset)</h2>
     <div id="reports"><div class="msg">Loading reports</div></div>
-    <button type="button" class="danger" id="btnRemove" style="margin-top:22px">Remove this machine</button>
+    <button type="button" class="danger" id="btnDelAll" style="margin-top:14px;width:100%">Delete all reports of this machine</button>
+    <button type="button" class="danger" id="btnRemove" style="margin-top:10px;width:100%">Remove this machine from the app</button>
   </section>
 
   <div class="msg" id="empty" hidden>Open Settings and enter your database URL and machine number.</div>
@@ -134,11 +184,13 @@
     <h2 style="margin-top:0">Settings</h2>
     <label for="sUrl">Database URL</label>
     <input id="sUrl" placeholder="https://machine-time-management-gimi-default-rtdb.europe-west1.firebasedatabase.app" inputmode="url" autocomplete="off">
-    <label for="sSecret">Database secret (needed if rules require login)</label>
-    <input id="sSecret" type="password" autocomplete="off">
+    <label for="sKey">Firebase Web API key</label>
+    <input id="sKey" autocomplete="off" autocapitalize="off">
     <label for="sMachines">Machine numbers, separated by commas</label>
     <input id="sMachines" placeholder="M01, M02, M03, M04, M05, M06, M07, M08" autocomplete="off">
-    <button type="button" id="btnBleOpen" style="width:100%;margin-top:16px">Device setup by Bluetooth (Wi-Fi, operator)</button>
+    <div class="msg" id="whoami" style="padding-left:0"></div>
+    <button type="button" id="btnSignOut" style="width:100%">Sign out</button>
+    <button type="button" id="btnBleOpen" style="width:100%;margin-top:12px">Device setup (Wi-Fi, operator)</button>
     <div class="row" style="margin-top:12px">
       <button type="button" id="sCancel">Cancel</button>
       <button class="primary" type="submit" id="sSave">Save</button>
@@ -147,7 +199,21 @@
 </dialog>
 
 <dialog id="dlgBle">
-  <h2 style="margin-top:0">Device setup by Bluetooth</h2>
+  <h2 style="margin-top:0">Device setup</h2>
+
+  <h2 style="font-size:16px;margin:10px 0 4px">A. Change the Wi-Fi from here (over the internet)</h2>
+  <div class="msg" style="padding-left:0">Use this while the device is still online. If the new Wi-Fi does not work, the device goes back to the old one by itself.</div>
+  <label for="wMachine">Machine</label>
+  <select id="wMachine"></select>
+  <label for="wSsid">New Wi-Fi name</label>
+  <input id="wSsid" autocomplete="off" autocapitalize="off">
+  <label for="wPass">New Wi-Fi password</label>
+  <input id="wPass" autocomplete="off" autocapitalize="off">
+  <button class="primary" type="button" id="wGo" style="width:100%;margin-top:12px">Send to the device</button>
+  <div class="msg" id="wMsg" style="padding-left:0"></div>
+
+  <hr class="hr">
+  <h2 style="font-size:16px;margin:10px 0 4px">B. Bluetooth (first setup, or when the device is offline)</h2>
   <div class="msg">1. On the device, hold the button for 20 seconds, then release. The screen shows "Bluetooth setup".<br>2. Fill in the boxes below and tap Connect and send, then choose the device TM-... from the list.</div>
   <label for="bPin">Setup PIN (the one in the device code)</label>
   <input id="bPin" inputmode="numeric" autocomplete="off">
@@ -168,24 +234,98 @@
   var $ = function(id){return document.getElementById(id)};
   var DEF = ["M01","M02","M03","M04","M05","M06","M07","M08"];
   var DEFURL = "https://machine-time-management-gimi-default-rtdb.europe-west1.firebasedatabase.app";
-  var cfg = {url:DEFURL, secret:"", machines:DEF.slice()};
+  var cfg = {url:DEFURL, apiKey:"", machines:DEF.slice()};
   var cur = null, timer = null, repTimer = null, store = {};
 
   function load(){
     try{
       var c = JSON.parse(localStorage.getItem("mm_cfg")||"null");
-      if(c){ cfg = c; if(!cfg.machines || cfg.machines.length<=1) cfg.machines = DEF.slice(); if(!cfg.url || cfg.url.indexOf("your-project")>=0) cfg.url = DEFURL; }
+      if(c){ cfg = c; if(!cfg.machines || cfg.machines.length<=1) cfg.machines = DEF.slice(); if(!cfg.url || cfg.url.indexOf("your-project")>=0) cfg.url = DEFURL; delete cfg.secret; }
+      if(!cfg.apiKey) cfg.apiKey = DEFKEY;
     }catch(e){}
   }
   function save(){ try{ localStorage.setItem("mm_cfg", JSON.stringify(cfg)); }catch(e){} }
 
-  function endpoint(path){
-    var u = cfg.url.replace(/\/+$/,"") + path + ".json";
-    if(cfg.secret) u += "?auth=" + encodeURIComponent(cfg.secret);
-    return u;
+  var DEFKEY = "AIzaSyDRP_gpWYsPo8W-fzq3j_4bmKPjEo4bbFQ";
+  var auth = {token:"", refresh:"", email:"", exp:0};
+
+  function authLoad(){
+    try{
+      var a = JSON.parse(localStorage.getItem("mm_auth")||"null");
+      if(a && a.refresh){ auth.refresh = a.refresh; auth.email = a.email || ""; }
+    }catch(e){}
   }
-  function fetchJson(path){
-    return fetch(endpoint(path), {cache:"no-store"}).then(function(r){
+  function authSave(){ try{ localStorage.setItem("mm_auth", JSON.stringify({refresh:auth.refresh, email:auth.email})); }catch(e){} }
+  function authClear(){ auth = {token:"", refresh:"", email:"", exp:0}; try{ localStorage.removeItem("mm_auth"); }catch(e){} }
+  function setTokens(idToken, refresh, expiresIn, email){
+    auth.token = idToken; auth.refresh = refresh;
+    auth.exp = Date.now() + (parseInt(expiresIn,10) || 3600) * 1000;
+    if(email) auth.email = email;
+    authSave();
+  }
+  function friendly(m){
+    m = String(m||"");
+    if(/INVALID_LOGIN_CREDENTIALS|EMAIL_NOT_FOUND|INVALID_PASSWORD|INVALID_EMAIL/.test(m)) return "Wrong username or password.";
+    if(/USER_DISABLED/.test(m)) return "This account is disabled. Ask the administrator.";
+    if(/TOO_MANY_ATTEMPTS/.test(m)) return "Too many tries. Wait a few minutes and try again.";
+    if(/API key not valid|API_KEY|INVALID_API_KEY/i.test(m)) return "The Firebase Web API key is wrong. Check it in Settings.";
+    if(/OPERATION_NOT_ALLOWED/.test(m)) return "Email/Password sign-in is not switched on in Firebase.";
+    return m || "Could not sign in.";
+  }
+  async function signIn(email, pass){
+    var r;
+    try{
+      r = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+encodeURIComponent(cfg.apiKey),
+        {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:email, password:pass, returnSecureToken:true})});
+    }catch(e){ throw new Error("No internet connection."); }
+    var j = await r.json();
+    if(!r.ok) throw new Error(friendly(j.error && j.error.message));
+    setTokens(j.idToken, j.refreshToken, j.expiresIn, j.email || email);
+  }
+  async function refreshAuth(){
+    if(!auth.refresh){ var e0 = new Error("Please sign in."); e0.authFail = true; throw e0; }
+    var r;
+    try{
+      r = await fetch("https://securetoken.googleapis.com/v1/token?key="+encodeURIComponent(cfg.apiKey),
+        {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+         body:"grant_type=refresh_token&refresh_token="+encodeURIComponent(auth.refresh)});
+    }catch(e){ throw new Error("No internet connection."); }
+    var j = await r.json();
+    if(!r.ok){ var e1 = new Error(friendly(j.error && j.error.message)); e1.authFail = true; throw e1; }
+    setTokens(j.id_token, j.refresh_token, j.expires_in);
+  }
+  async function ensureToken(){ if(!auth.token || Date.now() > auth.exp - 120000) await refreshAuth(); }
+  async function authed(doFetch){
+    try{
+      await ensureToken();
+      var r = await doFetch();
+      if(r.status === 401){ await refreshAuth(); r = await doFetch(); }
+      return r;
+    }catch(e){
+      if(e.authFail){ authClear(); showLogin("Session ended. Please sign in again."); }
+      throw e;
+    }
+  }
+  function stopAll(){ clearInterval(timer); clearInterval(repTimer); timer = null; repTimer = null; store = {}; cur = null; }
+  function showLogin(msg){
+    stopAll();
+    $("login").hidden = false;
+    $("lErr").textContent = msg || "";
+    if(auth.email && !$("lEmail").value) $("lEmail").value = shownName(auth.email);
+  }
+  var DOMAIN = "@tm-monitor.com";
+  function toEmail(u){ u = String(u||"").trim().toLowerCase(); return u.indexOf("@") >= 0 ? u : u + DOMAIN; }
+  function shownName(e){ e = String(e||""); return e.slice(-DOMAIN.length) === DOMAIN ? e.slice(0, -DOMAIN.length) : e; }
+  function signOut(){
+    authClear(); $("dlg").close(); $("lPass").value = ""; $("lEmail").value = "";
+    showLogin("");
+  }
+
+  function endpoint(path, qs){
+    return cfg.url.replace(/\/+$/,"") + path + ".json?auth=" + encodeURIComponent(auth.token) + (qs ? "&"+qs : "");
+  }
+  function fetchJson(path, qs){
+    return authed(function(){ return fetch(endpoint(path, qs), {cache:"no-store"}); }).then(function(r){
       if(!r.ok) throw new Error("HTTP "+r.status);
       return r.json();
     });
@@ -200,23 +340,24 @@
     return Math.floor(s/3600)+"h "+("0"+Math.floor((s%3600)/60)).slice(-2)+"m";
   }
   function barHtml(d){
-    var w=d.work||0,i=d.idle||0,m=d.maint||0,o=d.off||0,t=w+i+m+o;
-    if(!t) return "";
-    function seg(v,c){return '<span style="width:'+(100*v/t)+'%;background:var(--'+c+')"></span>';}
+    var w=d.work||0,i=d.idle||0,m=d.maint||0,o=d.off||0, used=w+i+m+o;
+    if(!used) return "";
+    var base = Math.max(shiftOf(d)*3600, used);
+    function seg(v,c){return '<span style="width:'+(100*v/base)+'%;background:var(--'+c+')"></span>';}
     return seg(w,"work")+seg(i,"idle")+seg(m,"maint")+seg(o,"off");
   }
 
   // status of one machine: {key, label, color}
   function status(id){
     var s = store[id];
-    if(!s || s.err) return {key:"err", label:"Cannot connect", color:"var(--off)"};
+    if(!s || s.err) return {key:"err", label:(navigator.onLine===false ? "Phone offline" : "Cannot connect"), color:"var(--off)"};
     if(!s.d) return {key:"none", label:"No data", color:"var(--off)"};
-    if(Date.now() - s.chg > 45000) return {key:"off", label:"No signal", color:"var(--off)"};
+    if(Date.now() - s.chg > 45000) return {key:"off", label:"Can't sync", color:"var(--off)"};
     var st = String(s.d.state||"").toUpperCase();
     if(st==="WORKING") return {key:"work", label:"Working", color:"var(--work)"};
     if(st==="IDLE")    return {key:"idle", label:"Idle", color:"var(--idle)"};
     if(st==="MAINT")   return {key:"maint", label:"Maintenance", color:"var(--maint)"};
-    return {key:"off", label:"No signal", color:"var(--off)"};
+    return {key:"off", label:"Can't sync", color:"var(--off)"};
   }
 
   function renderOverview(){
@@ -226,13 +367,18 @@
       var st = status(id), s = store[id] || {}, d = s.d;
       if(n[st.key]!==undefined) n[st.key]++; else n.other++;
       if(s.err && !firstErr) firstErr = s.err;
+      var num;
+      if(d && st.key==="off") num = "No internet at the device<br>Last data "+esc(devTime(d.updated));
+      else if(d) num = "Eff "+effOf(d).toFixed(1)+" %<br>Work "+hm(d.work);
+      else num = "--";
       var b = document.createElement("button");
       b.type = "button"; b.className = "mc";
       b.innerHTML =
         '<div class="strip" style="background:'+st.color+'"></div><div class="in">'+
-        '<div class="id">'+id+'</div>'+
+        '<div class="opn">'+esc(opName(d))+'</div>'+
+        '<div class="id">'+esc(id)+'</div>'+
         '<div class="stt" style="color:'+st.color+'">'+st.label+'</div>'+
-        (d ? '<div class="num">Eff '+(Number(d.efficiency)||0).toFixed(1)+' %<br>Work '+hm(d.work)+'</div>' : '<div class="num">--</div>')+
+        '<div class="num">'+num+'</div>'+
         '</div>';
       b.onclick = function(){ openMachine(id); };
       box.appendChild(b);
@@ -240,28 +386,101 @@
     var add = document.createElement("button");
     add.type = "button"; add.className = "mc add"; add.textContent = "+ Add machine";
     add.onclick = addMachine; box.appendChild(add);
-    var t = n.work+" working, "+n.idle+" idle, "+n.maint+" maintenance, "+n.other+" no signal";
-    if(firstErr) t += ". Problem: "+firstErr+". Check URL, secret and internet.";
+    var t = n.work+" working, "+n.idle+" idle, "+n.maint+" maintenance, "+n.other+" can't sync";
+    if(firstErr) t += ". Problem: "+firstErr+". "+(navigator.onLine===false ? "This phone has no internet." : "Check the internet, or ask the administrator to give this account access.");
     $("sum").textContent = t;
   }
 
   function renderDetail(){
     var st = status(cur), s = store[cur] || {}, d = s.d || {};
     var meta = cur;
-    if(st.key==="err") meta += "  |  "+(s.err||"")+". Check URL, secret and internet.";
+    if(st.key==="err") meta += "  |  "+(s.err||"")+". "+(navigator.onLine===false ? "This phone has no internet." : "Check the internet, or ask the administrator to give this account access.");
     else if(st.key==="none") meta += "  |  Nothing at /machines/"+cur+"/live yet";
-    else if(st.key==="off") meta += "  |  no new data for over 45 s (power off or no Wi-Fi)";
+    else if(st.key==="off") meta += "  |  Can't sync: the device has no internet or is off. Last data "+devTime(d.updated);
     else meta += "  |  updated just now";
     $("banner").style.background = st.color;
+    $("opLine").textContent = opName(s.d) ? "Operator: "+opName(s.d) : "";
     $("state").textContent = st.label;
     $("meta").textContent = meta;
+    $("lEff").textContent = "Efficiency (of "+shiftOf(d)+" h)";
+    $("vEff").textContent = s.d ? effOf(d).toFixed(1)+" %" : "--";
     $("vWork").textContent = s.d ? hms(d.work) : "--";
     $("vIdle").textContent = s.d ? hms(d.idle) : "--";
     $("vMaint").textContent = s.d ? hms(d.maint) : "--";
     $("vOff").textContent = s.d ? hms(d.off) : "--";
-    $("vEff").textContent = s.d ? (Number(d.efficiency)||0).toFixed(1)+" %" : "--";
     $("vTotal").textContent = s.d ? hm(d.total_work) : "--";
     $("bar").innerHTML = s.d ? barHtml(d) : "";
+    $("effNote").textContent = s.d ? "100% = the machine worked the whole "+shiftOf(d)+" hours with no idle, maintenance or power-off time." : "";
+    $("sinceTxt").textContent = (s.d && d.since) ? "Counting since "+d.since+" (last reset)" : "";
+    if(s.d && document.activeElement !== $("shiftSel")) $("shiftSel").value = String(shiftOf(d));
+  }
+
+
+  function esc(s){ return String(s==null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function shiftOf(d){ return (d && Number(d.shift) === 16) ? 16 : 8; }
+  function effCalc(w, i, m, o, shiftH){
+    var total = Math.max(shiftH*3600, (w||0)+(i||0)+(m||0)+(o||0));
+    var p = total ? 100*(w||0)/total : 0;
+    return p > 100 ? 100 : p;
+  }
+  function effOf(d){ return d ? effCalc(d.work, d.idle, d.maint, d.off, shiftOf(d)) : 0; }
+  function devTime(sec){
+    var n = Number(sec); if(!(n > 1e9)) return "";
+    var t = new Date(n*1000);
+    return t.getUTCFullYear()+"-"+pad2(t.getUTCMonth()+1)+"-"+pad2(t.getUTCDate())+" "+pad2(t.getUTCHours())+":"+pad2(t.getUTCMinutes());
+  }
+  function opName(d){ return (d && d.operator && d.operator !== "---") ? String(d.operator) : ""; }
+
+  function setShift(){
+    var v = parseInt($("shiftSel").value, 10), msg = $("shiftMsg");
+    var ids = $("shiftAll").checked ? cfg.machines.slice() : [cur];
+    msg.className = "msg"; msg.textContent = "Sending...";
+    Promise.all(ids.map(function(id){
+      return authed(function(){ return fetch(endpoint("/machines/"+id+"/shift"), {method:"PUT", body:String(v)}); })
+        .then(function(r){ if(r.status===401) throw new Error("Only an administrator can change the shift."); if(!r.ok) throw new Error("HTTP "+r.status); });
+    })).then(function(){
+      msg.textContent = "Shift set to "+v+" hours"+(ids.length>1 ? " for all machines" : "")+". The device updates within 30 seconds.";
+    }).catch(function(e){ msg.className = "msg err"; msg.textContent = e.message; });
+  }
+
+  function deleteAllReports(){
+    if(!cur) return;
+    var id = cur;
+    if(!confirm("Delete ALL reports of "+id+"? This cannot be undone.")) return;
+    authed(function(){ return fetch(endpoint("/machines/"+id+"/reports"), {method:"DELETE"}); })
+      .then(function(r){ if(r.status===401) throw new Error("Only an administrator can delete reports."); if(!r.ok) throw new Error("HTTP "+r.status); loadReports(); })
+      .catch(function(e){ alert(e.message); });
+  }
+
+  async function wifiRemote(){
+    var id = $("wMachine").value, ssid = $("wSsid").value, pass = $("wPass").value, msg = $("wMsg");
+    if(!ssid){ msg.textContent = "Type the new Wi-Fi name."; return; }
+    msg.textContent = "Sending...";
+    try{
+      var st0 = (store[id] && store[id].d) ? true : false;
+      if(!st0 || status(id).key !== "work" && status(id).key !== "idle" && status(id).key !== "maint"){
+        msg.textContent = "This machine looks offline now, so the change cannot reach it. Use the Bluetooth setup (B) below.";
+        return;
+      }
+      var prev = await fetchJson("/machines/"+id+"/wifi_status").catch(function(){ return null; });
+      var r1 = await authed(function(){ return fetch(endpoint("/machines/"+id+"/wifi_new_pass"), {method:"PUT", body:JSON.stringify(pass)}); });
+      if(r1.status === 401) throw new Error("Only an administrator can change the Wi-Fi.");
+      if(!r1.ok) throw new Error("HTTP "+r1.status);
+      var r2 = await authed(function(){ return fetch(endpoint("/machines/"+id+"/wifi_new_ssid"), {method:"PUT", body:JSON.stringify(ssid)}); });
+      if(!r2.ok) throw new Error("HTTP "+r2.status);
+      msg.textContent = "Sent. Waiting for the device (up to 2 minutes)...";
+      for(var n = 0; n < 40; n++){
+        await sleep(3000);
+        var st = await fetchJson("/machines/"+id+"/wifi_status").catch(function(){ return null; });
+        if(st && st !== prev){
+          msg.textContent = /^ok/.test(st)
+            ? "Done. The device joined the new Wi-Fi."
+            : "The device could not join the new Wi-Fi, so it went back to the old one. Check the name and password.";
+          return;
+        }
+      }
+      msg.textContent = "No answer from the device yet. It may be offline. Use the Bluetooth setup (B) below.";
+    }catch(e){ msg.textContent = e.message; }
   }
 
   function render(){ renderOverview(); if(cur) renderDetail(); }
@@ -302,28 +521,35 @@
   function loadDayReport(){
     var v = $("repDate").value, box = $("dayRep");
     if(!v){ box.innerHTML = '<div class="msg">Pick a day first.</div>'; return; }
-    var key = v.replace(/-/g,""), live = (v===todayStr());
+    var key = v.replace(/-/g,""), isToday = (v===todayStr());
     box.innerHTML = '<div class="msg">Loading</div>';
     Promise.all(cfg.machines.map(function(id){
-      if(live){ var s = store[id]; return Promise.resolve({id:id, d:(s&&s.d)?s.d:null}); }
-      return fetchJson("/machines/"+id+"/reports/"+key)
-        .then(function(d){ return {id:id, d:d||null}; })
-        .catch(function(e){ return {id:id, d:null, err:e.message}; });
+      return fetchJson("/machines/"+id+"/reports", 'orderBy=%22%24key%22&startAt=%22'+key+'%22&endAt=%22'+key+'~%22')
+        .then(function(r){ return {id:id, list: r ? Object.keys(r).sort().map(function(k){ return r[k]; }) : []}; })
+        .catch(function(e){ return {id:id, list:[], err:e.message}; });
     })).then(function(rows){
-      var W=0,I=0,M=0,O=0,txt="Machine report "+v+(live?" (today so far)":"")+"\n", html="";
-      rows.forEach(function(r){
-        if(r.d){
-          W+=r.d.work||0; I+=r.d.idle||0; M+=r.d.maint||0; O+=r.d.off||0;
-          html += "<tr><td>"+r.id+"</td><td>"+hm(r.d.work)+"</td><td>"+hm(r.d.idle)+"</td><td>"+hm(r.d.maint)+"</td><td>"+hm(r.d.off)+"</td><td>"+(Number(r.d.efficiency)||0).toFixed(1)+"%</td></tr>";
-          txt += r.id+": Eff "+(Number(r.d.efficiency)||0).toFixed(1)+"%, Work "+hm(r.d.work)+", Idle "+hm(r.d.idle)+", Maint "+hm(r.d.maint)+", Off "+hm(r.d.off)+"\n";
-        } else {
-          html += '<tr><td>'+r.id+'</td><td colspan="5" style="color:var(--mute)">'+(r.err?r.err:"no data")+'</td></tr>';
+      var W=0,I=0,M=0,O=0,B=0, txt="Machine report "+v+(isToday?" (today so far)":"")+"\n", html="";
+      rows.forEach(function(row){
+        var w=0,i=0,m=0,o=0,base=0,n=row.list.length;
+        row.list.forEach(function(d){ w+=d.work||0; i+=d.idle||0; m+=d.maint||0; o+=d.off||0; base+=Math.max(shiftOf(d)*3600, (d.work||0)+(d.idle||0)+(d.maint||0)+(d.off||0)); });
+        if(isToday){
+          var s = store[row.id];
+          if(s && s.d){ w+=s.d.work||0; i+=s.d.idle||0; m+=s.d.maint||0; o+=s.d.off||0; base+=Math.max(shiftOf(s.d)*3600, (s.d.work||0)+(s.d.idle||0)+(s.d.maint||0)+(s.d.off||0)); n++; }
         }
+        if(!n){
+          html += '<tr><td>'+esc(row.id)+'</td><td colspan="5" style="color:var(--mute)">'+(row.err ? esc(row.err) : "no data")+'</td></tr>';
+          return;
+        }
+        W+=w; I+=i; M+=m; O+=o; B+=base;
+        var eff = base ? Math.min(100, 100*w/base) : 0;
+        html += "<tr><td>"+esc(row.id)+(n>1 ? " ("+n+")" : "")+"</td><td>"+hm(w)+"</td><td>"+hm(i)+"</td><td>"+hm(m)+"</td><td>"+hm(o)+"</td><td>"+eff.toFixed(1)+"%</td></tr>";
+        txt += row.id+": Eff "+eff.toFixed(1)+"%, Work "+hm(w)+", Idle "+hm(i)+", Maint "+hm(m)+", Off "+hm(o)+"\n";
       });
-      var den = W+I+M, eff = den ? 100*W/den : 0;
-      html += '<tr class="tot"><td>All</td><td>'+hm(W)+'</td><td>'+hm(I)+'</td><td>'+hm(M)+'</td><td>'+hm(O)+'</td><td>'+eff.toFixed(1)+'%</td></tr>';
-      txt += "All machines: Eff "+eff.toFixed(1)+"%, Work "+hm(W)+", Idle "+hm(I)+", Maint "+hm(M)+", Off "+hm(O);
-      box.innerHTML = '<div class="scroll"><table class="tbl"><tr><th>Machine</th><th>Work</th><th>Idle</th><th>Maint</th><th>Off</th><th>Eff</th></tr>'+html+'</table></div>';
+      var effAll = B ? Math.min(100, 100*W/B) : 0;
+      html += '<tr class="tot"><td>All</td><td>'+hm(W)+'</td><td>'+hm(I)+'</td><td>'+hm(M)+'</td><td>'+hm(O)+'</td><td>'+effAll.toFixed(1)+'%</td></tr>';
+      txt += "All machines: Eff "+effAll.toFixed(1)+"%, Work "+hm(W)+", Idle "+hm(I)+", Maint "+hm(M)+", Off "+hm(O);
+      box.innerHTML = '<div class="scroll"><table class="tbl"><tr><th>Machine</th><th>Work</th><th>Idle</th><th>Maint</th><th>Off</th><th>Eff</th></tr>'+html+'</table></div>'+
+        '<div class="sm">100% = the machine worked the whole shift (8 h or 16 h) with no idle, maintenance or power-off time. A number in brackets = how many reports that day.</div>';
       var b = document.createElement("button"); b.type="button"; b.textContent="Share this report"; b.style.marginTop="10px";
       b.onclick = function(){
         if(navigator.share) navigator.share({text:txt}).catch(function(){});
@@ -345,29 +571,39 @@
   function loadReports(){
     if(!cur) return;
     var id = cur;
-    fetchJson("/machines/"+id+"/reports").then(function(r){
+    fetchJson("/machines/"+id+"/reports", "orderBy=%22%24key%22&limitToLast=31").then(function(r){
       if(id!==cur) return;
       var box = $("reports"); box.innerHTML = "";
-      if(!r){ box.innerHTML = '<div class="msg">No reports yet. The first one appears after midnight.</div>'; return; }
-      Object.keys(r).sort().reverse().slice(0,31).forEach(function(k){
+      if(!r){ box.innerHTML = '<div class="msg">No reports yet. A report is saved each time the device is reset (hold its button for 2 seconds).</div>'; return; }
+      Object.keys(r).sort().reverse().forEach(function(k){
         var d = r[k], el = document.createElement("div"); el.className="rep";
+        var title = d.reset_at ? "Reset "+d.reset_at : fmtDay(k);
+        var e = effOf(d);
         el.innerHTML =
-          '<div class="top"><span>'+fmtDay(k)+'</span><span>'+(Number(d.efficiency)||0).toFixed(1)+' %</span></div>'+
+          '<div class="top"><span>'+esc(title)+'</span><span>'+e.toFixed(1)+' %</span></div>'+
           '<div class="bar">'+barHtml(d)+'</div>'+
-          '<div class="sub">Work '+hms(d.work)+'  Idle '+hms(d.idle)+'<br>Maint '+hms(d.maint)+'  Off '+hms(d.off)+
-          (d.operator ? '<br>Operator: '+String(d.operator).replace(/[<>&]/g,"") : "")+'</div>';
-        var b = document.createElement("button"); b.type="button"; b.textContent="Share"; b.style.marginTop="8px";
+          '<div class="sub">Work '+hms(d.work)+'  Idle '+hms(d.idle)+'<br>Maint '+hms(d.maint)+'  Off '+hms(d.off)+'<br>'+
+          'Shift '+shiftOf(d)+' h'+(d.since ? '  |  from '+esc(d.since) : '')+
+          (d.operator && d.operator!=="---" ? '<br>Operator: '+esc(d.operator) : '')+'</div>';
+        var act = document.createElement("div"); act.className = "actions";
+        var b = document.createElement("button"); b.type="button"; b.textContent="Share";
         b.onclick = function(){
-          var txt = "Machine "+id+" report "+fmtDay(k)+"\nEfficiency: "+(Number(d.efficiency)||0).toFixed(1)+"%\nWorking: "+hms(d.work)+
-                    "\nIdle: "+hms(d.idle)+"\nMaintenance: "+hms(d.maint)+"\nPower off: "+hms(d.off)+"\nTotal working: "+hm(d.total_work);
+          var txt = "Machine "+id+" report "+title+"\nEfficiency: "+e.toFixed(1)+"% (shift "+shiftOf(d)+" h)\nWorking: "+hms(d.work)+"\nIdle: "+hms(d.idle)+"\nMaintenance: "+hms(d.maint)+"\nPower off: "+hms(d.off)+(d.operator && d.operator!=="---" ? "\nOperator: "+d.operator : "");
           if(navigator.share) navigator.share({text:txt}).catch(function(){});
           else if(navigator.clipboard) navigator.clipboard.writeText(txt);
         };
-        el.appendChild(b);
+        var del = document.createElement("button"); del.type="button"; del.className="danger"; del.textContent="Delete";
+        del.onclick = function(){
+          if(!confirm("Delete this report ("+title+")?")) return;
+          authed(function(){ return fetch(endpoint("/machines/"+id+"/reports/"+k), {method:"DELETE"}); })
+            .then(function(rr){ if(rr.status===401) throw new Error("Only an administrator can delete reports."); if(!rr.ok) throw new Error("HTTP "+rr.status); loadReports(); })
+            .catch(function(er){ alert(er.message); });
+        };
+        act.appendChild(b); act.appendChild(del); el.appendChild(act);
         box.appendChild(el);
       });
     }).catch(function(e){
-      if(id===cur) $("reports").innerHTML = '<div class="msg err">Could not load reports: '+e.message+'</div>';
+      if(id===cur) $("reports").innerHTML = '<div class="msg err">Could not load reports: '+esc(e.message)+'</div>';
     });
   }
 
@@ -388,8 +624,8 @@
   function sendOperator(){
     var v = $("op").value.trim();
     if(!v || !cur) return;
-    fetch(endpoint("/machines/"+cur+"/operator"), {method:"PUT", body:JSON.stringify(v)})
-      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status);
+    authed(function(){ return fetch(endpoint("/machines/"+cur+"/operator"), {method:"PUT", body:JSON.stringify(v)}); })
+      .then(function(r){ if(r.status===401) throw new Error("Only an administrator can change the operator name."); if(!r.ok) throw new Error("HTTP "+r.status);
         $("opMsg").className="msg"; $("opMsg").textContent="Sent. The machine screen updates within 30 seconds."; })
       .catch(function(e){ $("opMsg").className="msg err"; $("opMsg").textContent="Not sent: "+e.message; });
   }
@@ -408,13 +644,14 @@
   }
 
   $("btnSettings").onclick = function(){
-    $("sUrl").value = cfg.url; $("sSecret").value = cfg.secret; $("sMachines").value = cfg.machines.join(", ");
+    $("sUrl").value = cfg.url; $("sKey").value = cfg.apiKey; $("sMachines").value = cfg.machines.join(", ");
+    $("whoami").textContent = auth.email ? "Signed in as " + shownName(auth.email) : "";
     $("dlg").showModal();
   };
   $("sCancel").onclick = function(){ $("dlg").close(); };
   $("frm").onsubmit = function(){
     cfg.url = $("sUrl").value.trim();
-    cfg.secret = $("sSecret").value.trim();
+    cfg.apiKey = $("sKey").value.trim() || DEFKEY;
     cfg.machines = $("sMachines").value.split(",").map(function(x){return x.trim();}).filter(Boolean);
     if(!cfg.machines.length) cfg.machines = DEF.slice();
     store = {};
@@ -423,6 +660,8 @@
   $("btnOp").onclick = sendOperator;
   $("btnBack").onclick = showOverview;
   $("btnRemove").onclick = removeMachine;
+  $("btnShift").onclick = setShift;
+  $("btnDelAll").onclick = deleteAllReports;
   $("btnRep").onclick = loadDayReport;
   $("repDate").value = todayStr();
   $("repDate").max = todayStr();
@@ -489,12 +728,39 @@
     }
     try{ if(dev && dev.gatt.connected) dev.gatt.disconnect(); }catch(x){}
   }
-  $("btnBleOpen").onclick = function(){ $("dlg").close(); $("bleLog").textContent=""; $("dlgBle").showModal(); };
+  $("btnBleOpen").onclick = function(){
+    $("dlg").close(); $("bleLog").textContent = ""; $("wMsg").textContent = "";
+    var sel = $("wMachine"); sel.innerHTML = "";
+    cfg.machines.forEach(function(id){ var o = document.createElement("option"); o.value = id; o.textContent = id; sel.appendChild(o); });
+    if(cur) sel.value = cur;
+    $("dlgBle").showModal();
+  };
+  $("wGo").onclick = wifiRemote;
   $("bClose").onclick = function(){ $("dlgBle").close(); };
   $("bGo").onclick = bleGo;
 
-  load();
-  if(!cfg.url){ $("empty").hidden = false; } else { start(); }
+  $("btnSignOut").onclick = signOut;
+  $("loginForm").onsubmit = async function(ev){
+    ev.preventDefault();
+    var btn = $("lGo");
+    $("lErr").textContent = "";
+    btn.disabled = true; btn.textContent = "Signing in...";
+    try{
+      await signIn(toEmail($("lEmail").value), $("lPass").value);
+      $("lPass").value = "";
+      $("login").hidden = true;
+      start();
+    }catch(e){ $("lErr").textContent = e.message; }
+    btn.disabled = false; btn.textContent = "Sign in";
+  };
+
+  load(); authLoad();
+  if(auth.refresh){
+    refreshAuth().then(function(){ $("login").hidden = true; start(); })
+      .catch(function(e){ showLogin(e.authFail ? "Please sign in again." : e.message); });
+  } else {
+    showLogin("");
+  }
 })();
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
 </script>
